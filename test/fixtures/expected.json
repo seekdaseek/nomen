@@ -1,0 +1,112 @@
+{
+  "aave_borrow": {
+    "txHash": "0x6c093cc67afbffaa4f096fd6c9621e4a95f7f89ca80bef2a93211cb7661b01b2",
+    "block": 25904043,
+    "txIndex": 136,
+    "status": 1,
+    "logs": 5,
+    "txBytes": 3328,
+    "siblings": 9,
+    "roots": 8,
+    "creditEvents": [
+      {
+        "borrower": "0x5c19faf7ba5f7c680c9c4da2dccd3d20947cd229",
+        "marketOrAsset": "0x000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "amount": "81000000",
+        "protocol": "AaveV3",
+        "kind": "Borrow",
+        "dataLen": 128,
+        "topics": 4,
+        "logIndex": 559
+      }
+    ]
+  },
+  "morpho_repay": {
+    "txHash": "0x1fbe53a856a9860ad883669b1ed29d99b0bd5ed0fee1de560d841b6d68fc84c4",
+    "block": 25904070,
+    "txIndex": 77,
+    "status": 1,
+    "logs": 7,
+    "txBytes": 5376,
+    "siblings": 8,
+    "roots": 1,
+    "creditEvents": [
+      {
+        "borrower": "0xd668337cb6b623216a93e55b76f8af19af10abf5",
+        "marketOrAsset": "0x04b580ba9e6e886b67e47265cc8e314820123d5683563bb24097ad80513d6e4f",
+        "amount": "1",
+        "protocol": "MorphoBlue",
+        "kind": "Repay",
+        "dataLen": 64,
+        "topics": 4,
+        "logIndex": 625
+      }
+    ]
+  },
+  "aave_liquidation": {
+    "txHash": "0x369cf8d4d422b0895deda1f5c6ad0058579590ec14e9568da4ec967720175b5b",
+    "block": 25904041,
+    "txIndex": 186,
+    "status": 1,
+    "logs": 27,
+    "txBytes": 11488,
+    "siblings": 8,
+    "roots": 10,
+    "creditEvents": [
+      {
+        "borrower": "0x520a0cf49eaf879a8212f6bee8c067a219e759f9",
+        "marketOrAsset": "0x000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "amount": "2416444025",
+        "protocol": "AaveV3",
+        "kind": "Liquidation",
+        "dataLen": 128,
+        "topics": 4,
+        "logIndex": 546
+      }
+    ]
+  },
+  "spark_borrow": {
+    "txHash": "0x0b277c9a53cba1d3872a0e888ecaf471f872585bf28f353d655ef1a09cd7d6d5",
+    "block": 25903309,
+    "txIndex": 108,
+    "status": 1,
+    "logs": 5,
+    "txBytes": 3328,
+    "siblings": 8,
+    "roots": 92,
+    "creditEvents": [
+      {
+        "borrower": "0x933adedd85824da75ec8a334a7907e69e7c02833",
+        "marketOrAsset": "0x000000000000000000000000dc035d45d973e3ec169d2276ddab16f1e407384f",
+        "amount": "2900000000000000000000000",
+        "protocol": "Spark",
+        "kind": "Borrow",
+        "dataLen": 128,
+        "topics": 4,
+        "logIndex": 180
+      }
+    ]
+  },
+  "morpho_borrow": {
+    "txHash": "0x98e7b583817d9ebdba5eaebe5b62400031076ac497d65e17ff13d3ff5b9c223f",
+    "block": 25905712,
+    "txIndex": 121,
+    "status": 1,
+    "logs": 4,
+    "txBytes": 2976,
+    "siblings": 9,
+    "roots": 9,
+    "creditEvents": [
+      {
+        "borrower": "0x9f0dca77e93a980750a6d1102c54d4713d7df952",
+        "marketOrAsset": "0x002278ea242ec722813b4fe3c8eeaa07dbc331c731cc0b4248a1bf0771f933ea",
+        "amount": "45516038670",
+        "protocol": "MorphoBlue",
+        "kind": "Borrow",
+        "dataLen": 96,
+        "topics": 4,
+        "logIndex": 167
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "network": "creditcoin-cc3-testnet",
+  "chainId": 102031,
+  "rpc": "https://rpc.cc3-testnet.creditcoin.network",
+  "contract": "Nomen",
+  "address": "0x0c019ee3298111b3b067ae1ba93f73d93ee5230e",
+  "tx": "0x1792c8bce4343c362cc0253276293d67fa695dd0a564d7121291fae4b1530250",
+  "gasUsed": 2063812,
+  "gasPriceWei": 500000001,
+  "block": 5430487,
+  "status": "0x1",
+  "deployer": "0x98F0a24767CfD6032e82c110fa43fA605F0ebf6D",
+  "creationBytecodeKeccak": "0xb326600b5ca18686028c2436b3ccdc4ca13f8ab6f6da2f317e85774b6d29f44a",
+  "balanceBeforeWei": "9999997309489497641633",
+  "balanceAfterWei": "9999996277583495577821",
+  "deployedAt": "2026-09-04T18:37:33Z"
+}
