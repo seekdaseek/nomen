@@ -1,0 +1,42 @@
+{
+  "stamp": "20260904T182424Z",
+  "deployer": "0x98F0a24767CfD6032e82c110fa43fA605F0ebf6D",
+  "cc3_rpc": "https://rpc.cc3-testnet.creditcoin.network",
+  "faucet_amount_wei": 10000000000000000000000,
+  "balance_before_wei": 10000000000000000000000,
+  "balance_before_execute_wei": 9999997429014497641633,
+  "balance_after_wei": 9999997309489497641633,
+  "ascminter": {
+    "address": "0xE772DC00d9A580288fD10303632456690562a144",
+    "tx": "0xd4238286f37d9464b2b42a2aa81d12211dba09f2e1c695c18e65d0e782561eb4",
+    "gas_used": 1391802,
+    "gas_price_wei": 1500000001,
+    "cost_wei": 2087703001391802
+  },
+  "bridgetesttoken": {
+    "address": "0x684afed9892b6a53a172bdc4b21f470602d2be28",
+    "tx": "0x3c48ba85c37788394f6b2b5a87990c1e9d064349f1177455e95d953bf691feb0",
+    "gas_used": 817689,
+    "gas_price_wei": 500000001,
+    "cost_wei": 408844500817689
+  },
+  "wrap_origin_token": {
+    "tx": "0x7e3c855a1d91036ce05315b89166d030e2e603981b9d3e1124754b7bf982d520",
+    "gas_used": 148876,
+    "gas_price_wei": 500000001,
+    "cost_wei": 74438000148876
+  },
+  "execute": {
+    "tx": "0xa04178714352a6f4f263c9f1d817c8211b3d9674361028c744b99b9a64fb30b1",
+    "gas_used": 239050,
+    "gas_price_wei": 500000000,
+    "cost_wei": 119525000000000,
+    "block": 5430437,
+    "status": "0x1",
+    "wall_seconds": 14,
+    "source_chain_key": 1,
+    "source_tx": "0x216a8c7289abdb279f0844605baeee7a490ffde1b203bf97383f5ed6ffb0e054",
+    "source_block": 11627802,
+    "emitter": "0x0F24FD9e0524BA53d3f0A4A40350Adf5370b4A53"
+  }
+}
