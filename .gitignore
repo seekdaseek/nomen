@@ -1,0 +1,12 @@
+.env
+.env.*
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+node_modules/
+out/
+cache/
+broadcast/
+.DS_Store
+gate/*.log
