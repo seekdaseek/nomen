@@ -65,7 +65,9 @@
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
   th { font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
-  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; padding-right: 0; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; padding-right: 18px; white-space: nowrap; }
+  td.num:last-child, th.num:last-child { padding-right: 0; }
+  td.mono { white-space: nowrap; }
   td.mono { font-family: var(--mono); font-size: 12px; }
   .tablewrap { overflow-x: auto; }
   tr:last-child td { border-bottom: 0; }
