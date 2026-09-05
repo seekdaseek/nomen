@@ -15,7 +15,7 @@ Built for BUIDL CTC 2026 Fall (RWA track). Everything below is measured; anythin
 | Tests | 24 Foundry tests, all passing, five of them against real prover responses from Ethereum mainnet |
 | Live records | 5 credit events proven and recorded: Aave v3 Borrow, Morpho Blue Borrow, Morpho Blue Repay, Spark Borrow, Aave v3 LiquidationCall. Five borrowers scored. |
 | First CreditEvent on CC3 | `0xd950b51b24f9feaf364848418d02e3f68eb0e006844d2d5e53f8e5cf0755d949` (Spark Borrow, 2.9M USDS, Ethereum block 25,903,309) |
-| Recorder | not yet running (step 3) |
+| Recorder | running on the VPS under PM2 since 2026-09-05 05:34 UTC, tailing the three pools from Ethereum block 25,901,850; page and API at [nomen.ochinimus.app](https://nomen.ochinimus.app) |
 
 ## How a record comes to exist
 
@@ -90,7 +90,22 @@ Three proofs fetched at 13:04 UTC and submitted at 18:38 UTC reverted in the ver
 5. **Both prover hosts work and behave identically**: `prover.cc3-testnet.creditcoin.network` (examples `.env`) and `proof-gen-api.cc3-testnet.creditcoin.network` (docs). Mainnet has a 32-block reorg window: a transaction younger than that returns `BlockNotOnSourceChain`, retriable. The prover marks proofs `cached: true` on first request, so it pre-indexes attested blocks.
 6. **The tutorial's example Sepolia hash** `0x87c97c77…` is unknown to the prover (`TxHashNotFound`). hello-bridge has no deploy step; the deployable copy of the same contracts is `custom-contracts-bridging`.
 7. **Faucet**: pays 10,000 tCTC, not the documented 100, from the substrate side (no EVM transaction appears for it; nonce stays 0).
-8. **Ethereum log source**: `eth.drpc.org` serves `eth_getLogs` over 7,200-block ranges without a token but intermittently answers `Can't route your request to suitable provider` (code 12) and rejects Python's default user agent with 403. 1,200-block chunks with retry and backoff worked. publicnode, 1rpc, flashbots and cloudflare refuse or cap the ranges.
+8. **Ethereum log source from a laptop**: `eth.drpc.org` serves `eth_getLogs` over 7,200-block ranges without a token but intermittently answers `Can't route your request to suitable provider` (code 12) and rejects Python's default user agent with 403. 1,200-block chunks with retry and backoff worked.
+9. **Ethereum log source from a datacenter IP is a different story.** From the Hetzner VPS, drpc answers code 12 for *every* `eth_getLogs` shape, even 100 recent blocks, deterministically, while `eth_blockNumber` works. Of fifteen public endpoints tested from that IP, two serve 1,200-block log ranges: OnFinality's public node and MEV Blocker (`rpc.mevblocker.io`). 1rpc caps at 50 blocks; publicnode, Ankr, Cloudflare, Blast, ZAN, LlamaRPC and BlockPI refuse, cap or are down. OnFinality then rate-limits `eth_call` bursts (`-32029`), which stalled the first chunk behind per-event Morpho market lookups; MEV Blocker answers `eth_call` in ~70 ms. The recorder therefore rotates providers per call, MEV Blocker first, and stores rows before resolving metadata.
+10. **Cloudflare tunnel ingress does not hot-reload** on this box's cloudflared 2026.8.3 with a local config file; adding a hostname needs the tunnel process cycled.
+
+## The recorder
+
+`recorder/` is TypeScript run directly by Node 22 (type stripping; no build step, no native modules; `node:sqlite` for the ledger). One process does four things every 30 s:
+
+1. **Tail** the three pools on Ethereum for the six topics, in 1,200-block chunks, staying 40 blocks behind the head (the prover's reorg window is 32), cursor stored in the ledger. Ethereum reads rotate across a provider list per call (see finding 9).
+2. **Attest**: rows whose block is at or below the ChainInfo precompile's latest attested Ethereum height move `seen → attested`.
+3. **Submit**, liquidations first, then borrows, then repays; self-submitted rows ahead of everything. For each transaction: fetch the proof from the prover *seconds before* sending (finding 1), compute the query id off-chain and skip anything the contract already has, `estimateGas` first so a proof the verifier would reject costs nothing, then send a batch of six with consecutive nonces into one 15 s CC3 block and wait for all receipts. Every ledger row is reconciled against the `CreditEvent`s the contract actually emitted; a row the contract did not emit is failed with the reason, an event the scanner did not have is kept, flagged `onchain_only`.
+4. **Price**: hourly snapshot of Chainlink ETH/USD and BTC/USD (feeds resolved from the Feed Registry) and `wstETH.stEthPerToken()` at one stated block.
+
+The ledger (`recorder/nomen.db`) has one row per observed event with state `seen → attested → proven → recorded | failed(reason)`, the Ethereum tx and log index, protocol, kind, borrower, amount, token, Ethereum block, Creditcoin tx and gas used. Rows are never deleted. It is the source of every number on the page. Read surface, same origin as the page: `GET /totals`, `GET /borrower/:address`, `GET /recent?n=50`, `GET /health`, `GET /submissions?n=20`, and `POST /submit` with `{"address": "0x…"}` or `{"txHash": "0x…"}` for the self-submit path.
+
+Measured on the first run: the 7,200-block backlog (2,548 events) scanned in 8 s; the submitter recorded 75 events in its first 6 minutes at six per batch, average 296k gas, zero failures.
 
 ## Compound v3 is out, and why
 
@@ -104,6 +119,9 @@ test/Nomen.t.sol               24 tests; 0xFD2 and 0xFD3 mocked, real prover fix
 test/fixtures/*.json           raw prover responses (chainKey 3) + expected.json read independently from the receipts
 scripts/deploy_nomen.sh        deploy to CC3 (cast send --async + receipt polling)
 scripts/record_fixture.mjs     submit one prover response via record() and print gas + CreditEvent
+scripts/deploy_vps.sh          clone/pull on the VPS, npm ci, PM2 delete + start + save
+recorder/src/                  the recorder: config, db (ledger), eth (scanner + provider rotation), creditcoin (proofs, queryId, submit), submit, tail, prices, selfsubmit, server, main
+recorder/public/nomen-index.html   the page
 gate/                          the step-1 gate script and its results
 deployments/                   cc3-testnet.json (deploy), live_records.json (every live record() so far)
 docs/reference/SOURCES.md      event declarations pinned to aave-v3-origin and morpho-blue commits
