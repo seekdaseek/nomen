@@ -87,7 +87,9 @@ export function startServer(): void {
         const queued = counts.attested + counts.proven;
         const cycleAge = age('last_cycle_at'), recordAge = age('last_recorded_at');
         // Stalled = the loop stopped cycling, or work is queued and nothing has been recorded for 20 minutes.
-        const stalled = cycleAge === null || cycleAge > 300 || (queued > 0 && (recordAge === null || recordAge > 1200));
+        // A cycle can take ~3 min with a full backlog (scan + four batches); allow 10 min, and a 10 min grace after (re)start.
+        const young = process.uptime() < 600;
+        const stalled = !young && ((cycleAge === null || cycleAge > 600) || (queued > 0 && (recordAge === null || recordAge > 1200)));
         return json(res, stalled ? 503 : 200, {
           ok: !stalled, stalled, dryRun: config.dryRun, uptimeSeconds: Math.round(process.uptime()),
           cursor: Number(getMeta('cursor') ?? 0), ethHead: Number(getMeta('eth_head') ?? 0), attestedHead: Number(getMeta('attested_head') ?? 0),
