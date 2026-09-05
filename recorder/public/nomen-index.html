@@ -37,6 +37,7 @@
 
   .thesis { padding: 44px 0 28px; }
   .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .eyebrow a { text-transform: none; letter-spacing: 0; }
   h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(26px, 3.6vw, 40px); line-height: 1.22; margin: 0; max-width: 30ch; text-wrap: balance; font-variation-settings: "opsz" 144; letter-spacing: -0.005em; }
   h1 .n { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text); }
   h1 .n.big { color: var(--accent); font-size: 1.15em; }
@@ -185,7 +186,7 @@
   async function loadTotals() {
     const t = await (await fetch('/totals')).json();
     const kinds = t.byKind;
-    $('#headline').innerHTML = `<span class="n big">${fmt(t.recorded)}</span> credit events proven from Ethereum mainnet onto Creditcoin over <span class="n">${t.span.days}</span> days, across three lending protocols: <span class="n">${fmt(kinds.Borrow)}</span> loans opened, <span class="n">${fmt(kinds.Repay)}</span> repayments, <span class="n">${fmt(kinds.Liquidation)}</span> liquidations, <span class="n">${usd(t.usd.total)}</span> notional. <span class="n">${fmt(t.borrowers)}</span> borrowers scored.`;
+    $('#headline').innerHTML = `<span class="n big">${fmt(t.recorded)}</span> credit events proven from Ethereum mainnet onto Creditcoin over <span class="n">${t.span.days}</span> ${t.span.days === 1 ? 'day' : 'days'}, across three lending protocols: <span class="n">${fmt(kinds.Borrow)}</span> loans opened, <span class="n">${fmt(kinds.Repay)}</span> repayments, <span class="n">${fmt(kinds.Liquidation)}</span> liquidations, <span class="n">${usd(t.usd.total)}</span> notional. <span class="n">${fmt(t.borrowers)}</span> borrowers scored.`;
     $('#usd-method').innerHTML = `USD notional covers <code>${fmt(t.usd.pricedRows)}</code> of <code>${fmt(t.recorded)}</code> recorded events. Method: ${esc(t.usd.method)}.`;
     $('#contract-link').textContent = t.contract; $('#contract-link').href = `${explorer}/address/${t.contract}`;
     $('#ft-contract').textContent = `contract ${t.contract}`;
