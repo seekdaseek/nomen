@@ -20,7 +20,7 @@ const ALL_TOPICS = Object.values(TOPIC);
 function makeProvider(url: string): ethers.JsonRpcProvider {
   const req = new ethers.FetchRequest(url);
   req.setHeader('user-agent', config.userAgent);
-  req.timeout = 60_000;
+  req.timeout = 25_000;
   return new ethers.JsonRpcProvider(req, 1, { staticNetwork: true, batchMaxCount: 1 });
 }
 export const providers: { url: string; p: ethers.JsonRpcProvider }[] = config.ethRpcUrls.map((url) => ({ url, p: makeProvider(url) }));
