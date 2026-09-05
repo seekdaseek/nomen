@@ -195,7 +195,7 @@
     $('#legend').innerHTML = order.map((k) => `<div><span class="k"><span class="sw s-${k}"></span>${k}</span><span class="v">${fmt(c[k])}</span></div>`).join('');
     const protos = ['AaveV3', 'MorphoBlue', 'Spark'], names = { AaveV3: 'Aave v3', MorphoBlue: 'Morpho Blue', Spark: 'Spark' };
     $('#split tbody').innerHTML = protos.map((p) => `<tr><td>${names[p]}</td>${['Borrow', 'Repay', 'Liquidation'].map((k) => `<td class="num">${fmt(t.byProtocolKind[p + '.' + k] || 0)}</td>`).join('')}</tr>`).join('') + `<tr><td><b>recorded</b></td>${['Borrow', 'Repay', 'Liquidation'].map((k) => `<td class="num"><b>${fmt(kinds[k])}</b></td>`).join('')}</tr>`;
-    $('#onchain-note').textContent = t.onchain ? `Contract counters agree: ${fmt(t.onchain.events)} events, ${fmt(t.onchain.borrowers)} borrowers on-chain.` : 'Contract counters unavailable right now.';
+    $('#onchain-note').textContent = t.onchain ? `Contract counters: ${fmt(t.onchain.events)} events, ${fmt(t.onchain.borrowers)} borrowers on-chain${t.onchain.events === t.recorded ? ', matching the ledger.' : ` (ledger ${fmt(t.recorded)}: the difference is proofs recorded outside the recorder, reconciled as they are reached).`}` : 'Contract counters unavailable right now.';
     $('#usd').innerHTML = [['borrowed', t.usd.borrowed], ['repaid', t.usd.repaid], ['liquidated debt', t.usd.liquidated], ['total', t.usd.total]].map(([k, v]) => `<dt>${k}</dt><dd>${usd(v)}</dd>`).join('') + `<dt>priced</dt><dd>${fmt(t.usd.pricedRows)} / ${fmt(t.recorded)} events</dd>`;
   }
   async function loadHealth() {

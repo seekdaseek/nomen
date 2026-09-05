@@ -117,8 +117,8 @@ const stmts = {
   setMeta: db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'),
   countsByState: db.prepare('SELECT state, COUNT(*) AS n FROM events GROUP BY state'),
   markAttested: db.prepare(`UPDATE events SET state = 'attested', attested_at = ? WHERE state = 'seen' AND eth_block <= ?`),
-  queue: db.prepare(`SELECT * FROM events WHERE state IN ('attested', 'proven')
-    ORDER BY CASE source WHEN 'self' THEN 0 ELSE 1 END, CASE kind WHEN 'Liquidation' THEN 0 WHEN 'Borrow' THEN 1 ELSE 2 END, eth_block ASC, id ASC LIMIT ?`),
+  queue: db.prepare(`SELECT * FROM events WHERE state IN ('attested', 'proven') AND source = ?
+    ORDER BY CASE kind WHEN 'Liquidation' THEN 0 WHEN 'Borrow' THEN 1 ELSE 2 END, eth_block ASC, id ASC LIMIT ?`),
   rowsForTx: db.prepare('SELECT * FROM events WHERE eth_tx = ? ORDER BY log_index'),
   setProven: db.prepare(`UPDATE events SET state = 'proven', proven_at = ?, tx_index = ?, proof_roots = ?, proof_bytes = ?, reason = NULL WHERE eth_tx = ? AND state IN ('attested','proven')`),
   setRecorded: db.prepare(`UPDATE events SET state = 'recorded', recorded_at = ?, cc_tx = ?, cc_block = ?, gas_used = ?, reason = ? WHERE eth_tx = ? AND state IN ('attested','proven','failed')`),
@@ -169,7 +169,7 @@ export function countsByState(): Record<State, number> {
   return out;
 }
 export const markAttested = (attestedHead: number): number => Number(stmts.markAttested.run(now(), attestedHead).changes);
-export const queue = (limit: number): EventRow[] => stmts.queue.all(limit) as EventRow[];
+export const queue = (source: 'tail' | 'self', limit: number): EventRow[] => stmts.queue.all(source, limit) as EventRow[];
 export const rowsForTx = (ethTx: string): EventRow[] => stmts.rowsForTx.all(ethTx) as EventRow[];
 export const setProven = (ethTx: string, txIndex: number, roots: number, bytes: number): void => { stmts.setProven.run(now(), txIndex, roots, bytes, ethTx); };
 export const setRecorded = (ethTx: string, ccTx: string | null, ccBlock: number | null, gasUsed: number | null, reason: string | null): void => { stmts.setRecorded.run(now(), ccTx, ccBlock, gasUsed, reason, ethTx); };

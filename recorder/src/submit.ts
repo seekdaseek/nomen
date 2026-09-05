@@ -71,9 +71,12 @@ export async function submitOnce(): Promise<SubmitStats> {
   const requeued = requeueFailed(4, new Date(Date.now() - 5 * 60_000).toISOString());
   const stats: SubmitStats = { attestedHead: head, newlyAttested, requeued, prepared: 0, sent: 0, recorded: 0, failed: 0 };
 
-  const txs: string[] = [];
-  for (const r of queue(config.batch * 6)) if (!txs.includes(r.eth_tx)) txs.push(r.eth_tx);
-  const chosen = txs.slice(0, config.batch);
+  // Liquidations first within each source; self-submitted transactions take at most half of a batch so one
+  // address cannot push the whole market tail behind it, and the tail takes the rest.
+  const distinct = (rows: EventRow[]): string[] => { const out: string[] = []; for (const r of rows) if (!out.includes(r.eth_tx)) out.push(r.eth_tx); return out; };
+  const selfTxs = distinct(queue('self', config.batch * 6)).slice(0, Math.ceil(config.batch / 2));
+  const tailTxs = distinct(queue('tail', config.batch * 6)).filter((t) => !selfTxs.includes(t));
+  const chosen = [...selfTxs, ...tailTxs].slice(0, config.batch);
   if (chosen.length === 0) return stats;
   if (!nomen || !signer) { log('no signer configured; not submitting'); return stats; }
 
