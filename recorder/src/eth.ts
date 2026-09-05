@@ -17,35 +17,58 @@ export const TOPIC = {
 } as const;
 const ALL_TOPICS = Object.values(TOPIC);
 
-const req = new ethers.FetchRequest(config.ethRpcUrl);
-req.setHeader('user-agent', config.userAgent);
-req.timeout = 60_000;
-export const eth = new ethers.JsonRpcProvider(req, 1, { staticNetwork: true, batchMaxCount: 1 });
+function makeProvider(url: string): ethers.JsonRpcProvider {
+  const req = new ethers.FetchRequest(url);
+  req.setHeader('user-agent', config.userAgent);
+  req.timeout = 60_000;
+  return new ethers.JsonRpcProvider(req, 1, { staticNetwork: true, batchMaxCount: 1 });
+}
+export const providers: { url: string; p: ethers.JsonRpcProvider }[] = config.ethRpcUrls.map((url) => ({ url, p: makeProvider(url) }));
+/** Primary provider for one-off contract reads; log scanning rotates through all of them. */
+export const eth = providers[0].p;
+let preferred = 0;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const errMsg = (e: unknown): string => ((e as { shortMessage?: string }).shortMessage ?? (e as Error).message ?? String(e)).slice(0, 120);
 
-/** drpc intermittently answers "Can't route your request" (code 12), 403 or 429; back off and retry. */
-export async function withRetry<T>(label: string, fn: () => Promise<T>, tries = 5): Promise<T> {
+/**
+ * Try the last provider that worked first, then the others; two attempts each with backoff.
+ * drpc answers "Can't route your request" (code 12) deterministically from some IPs and intermittently from others.
+ */
+export async function withProviders<T>(label: string, fn: (p: ethers.JsonRpcProvider) => Promise<T>, attemptsEach = 2): Promise<T> {
   let last: unknown;
-  for (let i = 0; i < tries; i++) {
-    try {
-      return await fn();
-    } catch (e: unknown) {
-      last = e;
-      const msg = (e as { shortMessage?: string; message?: string }).shortMessage ?? (e as Error).message ?? String(e);
-      const wait = 2_000 * 2 ** i;
-      log(`eth ${label} attempt ${i + 1}/${tries} failed: ${msg.slice(0, 120)}; retry in ${wait}ms`);
-      await sleep(wait);
+  for (let k = 0; k < providers.length; k++) {
+    const idx = (preferred + k) % providers.length;
+    const { url, p } = providers[idx];
+    for (let i = 0; i < attemptsEach; i++) {
+      try {
+        const out = await fn(p);
+        if (idx !== preferred) { log(`eth: switching to ${url}`); preferred = idx; }
+        return out;
+      } catch (e) {
+        last = e;
+        log(`eth ${label} via ${new URL(url).host} attempt ${i + 1}/${attemptsEach} failed: ${errMsg(e)}`);
+        await sleep(1_500 * (i + 1));
+      }
     }
   }
   throw last;
 }
 
-export const blockNumber = (): Promise<number> => withRetry('blockNumber', () => eth.getBlockNumber());
+/** Same as withProviders for callers that already hold a contract bound to `eth`; rotates only on the primary. */
+export async function withRetry<T>(label: string, fn: () => Promise<T>, tries = 3): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); } catch (e) { last = e; log(`eth ${label} attempt ${i + 1}/${tries} failed: ${errMsg(e)}`); await sleep(2_000 * 2 ** i); }
+  }
+  throw last;
+}
+
+export const blockNumber = (): Promise<number> => withProviders('blockNumber', (p) => p.getBlockNumber());
 
 export function getLogsRange(fromBlock: number, toBlock: number): Promise<ethers.Log[]> {
-  return withRetry(`getLogs ${fromBlock}-${toBlock}`, () =>
-    eth.getLogs({ address: Object.keys(POOLS), topics: [ALL_TOPICS as unknown as string[]], fromBlock, toBlock }));
+  return withProviders(`getLogs ${fromBlock}-${toBlock}`, (p) =>
+    p.getLogs({ address: Object.keys(POOLS), topics: [ALL_TOPICS as unknown as string[]], fromBlock, toBlock }));
 }
 
 const topicAddr = (t: string): string => ethers.getAddress('0x' + t.slice(26));
@@ -87,9 +110,9 @@ export async function tokenMeta(address: string): Promise<{ symbol: string | nul
   if (cached) return { symbol: cached.symbol, decimals: cached.decimals };
   let symbol: string | null = null, decimals: number | null = null;
   try {
-    const c = new ethers.Contract(address, erc20, eth);
-    decimals = Number(await withRetry('decimals', () => c.decimals(), 3));
-    try { symbol = await c.symbol(); } catch { symbol = ethers.decodeBytes32String(await new ethers.Contract(address, erc20b32, eth).symbol()); }
+    decimals = Number(await withProviders('decimals', (p) => new ethers.Contract(address, erc20, p).decimals()));
+    try { symbol = await withProviders('symbol', (p) => new ethers.Contract(address, erc20, p).symbol(), 1); }
+    catch { symbol = ethers.decodeBytes32String(await withProviders('symbol32', (p) => new ethers.Contract(address, erc20b32, p).symbol(), 1)); }
   } catch (e) {
     log(`tokenMeta ${address} failed: ${(e as Error).message.slice(0, 80)}`);
   }
@@ -102,8 +125,7 @@ export async function morphoLoanToken(id: string): Promise<string | null> {
   const cached = getMarket(id);
   if (cached) return cached.loan_token;
   try {
-    const c = new ethers.Contract(MORPHO, morphoAbi, eth);
-    const p = await withRetry('idToMarketParams', () => c.idToMarketParams(id), 3);
+    const p = await withProviders('idToMarketParams', (pr) => new ethers.Contract(MORPHO, morphoAbi, pr).idToMarketParams(id));
     const loan = ethers.getAddress(p.loanToken), coll = ethers.getAddress(p.collateralToken);
     putMarket(id, loan, coll);
     return loan;

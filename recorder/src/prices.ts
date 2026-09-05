@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { log } from './config.ts';
-import { eth, withRetry, tokenMeta } from './eth.ts';
+import { withProviders, tokenMeta } from './eth.ts';
 import { insertPrice, latestPrice } from './db.ts';
 
 /**
@@ -29,18 +29,15 @@ const registryAbi = ['function getFeed(address base, address quote) view returns
 const feedAbi = ['function latestRoundData() view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)', 'function decimals() view returns (uint8)', 'function description() view returns (string)'];
 
 export async function refreshPrices(): Promise<void> {
-  const block = await withRetry('blockNumber', () => eth.getBlockNumber());
-  const registry = new ethers.Contract(REGISTRY, registryAbi, eth);
+  const block = await withProviders('blockNumber', (p) => p.getBlockNumber());
   for (const asset of ['ETH', 'BTC'] as const) {
-    const feed: string = await withRetry(`registry ${asset}/USD`, () => registry.getFeed(DENOM[asset], DENOM.USD), 3);
-    const c = new ethers.Contract(feed, feedAbi, eth);
-    const [rd, dec, desc] = await withRetry(`chainlink ${asset}`, () => Promise.all([c.latestRoundData({ blockTag: block }), c.decimals(), c.description()]), 3);
+    const feed: string = await withProviders(`registry ${asset}/USD`, (p) => new ethers.Contract(REGISTRY, registryAbi, p).getFeed(DENOM[asset], DENOM.USD));
+    const [rd, dec, desc] = await withProviders(`chainlink ${asset}`, (p) => { const c = new ethers.Contract(feed, feedAbi, p); return Promise.all([c.latestRoundData({ blockTag: block }), c.decimals(), c.description()]); });
     const usd = Number(rd.answer) / 10 ** Number(dec);
     insertPrice(asset, usd, `Chainlink Feed Registry ${REGISTRY} -> ${feed} (${desc})`, block, new Date(Number(rd.updatedAt) * 1000).toISOString());
     log(`price ${asset} ${usd} (${desc} ${feed}, feed updated ${new Date(Number(rd.updatedAt) * 1000).toISOString()}, block ${block})`);
   }
-  const w = new ethers.Contract(ethers.getAddress(WSTETH), ['function stEthPerToken() view returns (uint256)'], eth);
-  const rate = Number(await withRetry('stEthPerToken', () => w.stEthPerToken({ blockTag: block }), 3)) / 1e18;
+  const rate = Number(await withProviders('stEthPerToken', (p) => new ethers.Contract(ethers.getAddress(WSTETH), ['function stEthPerToken() view returns (uint256)'], p).stEthPerToken({ blockTag: block }))) / 1e18;
   insertPrice('WSTETH_PER_STETH', rate, `wstETH.stEthPerToken() ${WSTETH}`, block, null);
   log(`price wstETH/stETH ${rate} (block ${block})`);
 }

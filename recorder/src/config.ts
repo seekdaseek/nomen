@@ -29,7 +29,8 @@ try {
 export const config = {
   privateKey: str('CREDITCOIN_WALLET_PRIVATE_KEY', ''),
   nomenAddress: str('NOMEN_ADDRESS', deployedAddress),
-  ethRpcUrl: str('ETH_RPC_URL', 'https://eth.drpc.org'),
+  /** Comma-separated, tried in order per call; drpc serves 7,200-block eth_getLogs from some IPs and refuses others. */
+  ethRpcUrls: str('ETH_RPC_URLS', 'https://eth.drpc.org,https://eth.api.onfinality.io/public,https://rpc.mevblocker.io').split(',').map((u) => u.trim()).filter(Boolean),
   ccRpcUrl: str('CREDITCOIN_RPC_URL', 'https://rpc.cc3-testnet.creditcoin.network'),
   proverUrl: str('PROVER_URL', 'https://prover.cc3-testnet.creditcoin.network'),
   port: num('NOMEN_PORT', 3023),
