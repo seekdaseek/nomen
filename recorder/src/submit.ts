@@ -68,7 +68,8 @@ export async function submitOnce(): Promise<SubmitStats> {
   const head = await attestedHead();
   setMeta('attested_head', String(head));
   const newlyAttested = markAttested(head);
-  const requeued = requeueFailed(4, new Date(Date.now() - 5 * 60_000).toISOString());
+  // Retriable failures come back every 5 minutes for up to 96 attempts (~8 h) so a prover or RPC outage does not strand rows.
+  const requeued = requeueFailed(96, new Date(Date.now() - 5 * 60_000).toISOString());
   const stats: SubmitStats = { attestedHead: head, newlyAttested, requeued, prepared: 0, sent: 0, recorded: 0, failed: 0 };
 
   // Liquidations first within each source; self-submitted transactions take at most half of a batch so one
@@ -135,6 +136,7 @@ export async function submitOnce(): Promise<SubmitStats> {
       log(`wait ${p.ethTx.slice(0, 12)} failed: ${reason.slice(0, 100)}`);
     }
   }
-  setMeta('last_submit_at', now());
+  if (stats.sent > 0) setMeta('last_submit_at', now());
+  if (stats.recorded > 0) setMeta('last_recorded_at', now());
   return stats;
 }

@@ -42,7 +42,7 @@ async function totals() {
   const kinds = { Borrow: 0, Repay: 0, Liquidation: 0 };
   for (const [k, n] of Object.entries(byProtocolKind)) kinds[k.split('.')[1] as keyof typeof kinds] += n;
   const body = {
-    headline: `${rows.length} credit events proven from Ethereum mainnet onto Creditcoin over ${days} days, across three lending protocols: ${kinds.Borrow} loans opened, ${kinds.Repay} repayments, ${kinds.Liquidation} liquidations, $${Math.round(usd.borrowed + usd.repaid + usd.liquidated).toLocaleString('en-US')} notional (${usd.pricedRows} of ${rows.length} events priced). ${distinctRecordedBorrowers()} borrowers scored.`,
+    headline: `${rows.length} credit events proven from Ethereum mainnet onto Creditcoin over ${days} ${days === 1 ? 'day' : 'days'}, across three lending protocols: ${kinds.Borrow} loans opened, ${kinds.Repay} repayments, ${kinds.Liquidation} liquidations, $${Math.round(usd.borrowed + usd.repaid + usd.liquidated).toLocaleString('en-US')} notional (${usd.pricedRows} of ${rows.length} events priced). ${distinctRecordedBorrowers()} borrowers scored.`,
     recorded: rows.length, byKind: kinds, byProtocolKind, borrowers: distinctRecordedBorrowers(),
     usd: { ...usd, total: usd.borrowed + usd.repaid + usd.liquidated, method: 'stablecoins (USDC, USDT, DAI, USDS, USDe, GHO) at 1.00; WETH at Chainlink ETH/USD; wstETH at ETH/USD x stEthPerToken; WBTC and cbBTC at Chainlink BTC/USD; all read on Ethereum mainnet at one stated block, refreshed hourly; everything else counted in units only' },
     ledger: { counts, byProtocolKindState: countsByKindProtocol() },
@@ -82,7 +82,18 @@ export function startServer(): void {
         return json(res, 400, { error: 'send {"txHash": "0x…"} or {"address": "0x…", "blocks": 50000}' });
       }
       if (url.pathname === '/health') {
-        return json(res, 200, { ok: true, dryRun: config.dryRun, cursor: Number(getMeta('cursor') ?? 0), ethHead: Number(getMeta('eth_head') ?? 0), attestedHead: Number(getMeta('attested_head') ?? 0), lastScanAt: getMeta('last_scan_at'), lastSubmitAt: getMeta('last_submit_at'), counts: countsByState(), balanceCTC: await walletBalance() });
+        const counts = countsByState();
+        const age = (k: string): number | null => { const v = getMeta(k); return v ? Math.round((Date.now() - Date.parse(v)) / 1000) : null; };
+        const queued = counts.attested + counts.proven;
+        const cycleAge = age('last_cycle_at'), recordAge = age('last_recorded_at');
+        // Stalled = the loop stopped cycling, or work is queued and nothing has been recorded for 20 minutes.
+        const stalled = cycleAge === null || cycleAge > 300 || (queued > 0 && (recordAge === null || recordAge > 1200));
+        return json(res, stalled ? 503 : 200, {
+          ok: !stalled, stalled, dryRun: config.dryRun, uptimeSeconds: Math.round(process.uptime()),
+          cursor: Number(getMeta('cursor') ?? 0), ethHead: Number(getMeta('eth_head') ?? 0), attestedHead: Number(getMeta('attested_head') ?? 0),
+          lastScanAt: getMeta('last_scan_at'), lastCycleAt: getMeta('last_cycle_at'), lastSubmitAt: getMeta('last_submit_at'), lastRecordedAt: getMeta('last_recorded_at'),
+          secondsSinceLastCycle: cycleAge, secondsSinceLastRecord: recordAge, queued, counts, balanceCTC: await walletBalance().catch(() => 'rpc error'),
+        });
       }
       if (url.pathname === '/totals') return json(res, 200, await totals());
       if (url.pathname === '/recent') return json(res, 200, await Promise.all(recent(Math.min(200, Number(url.searchParams.get('n') ?? 50))).map(rowView)));

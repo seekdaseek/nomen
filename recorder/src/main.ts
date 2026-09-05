@@ -1,6 +1,6 @@
 import { config, log } from './config.ts';
 import { logWallet, walletBalance } from './creditcoin.ts';
-import { countsByState } from './db.ts';
+import { countsByState, setMeta } from './db.ts';
 import { refreshPrices } from './prices.ts';
 import { startServer } from './server.ts';
 import { submitOnce } from './submit.ts';
@@ -25,6 +25,7 @@ async function cycle(): Promise<void> {
   if (Date.now() - lastPrices > config.priceRefreshMs) {
     try { await refreshPrices(); lastPrices = Date.now(); } catch (e) { log(`prices failed: ${msg(e)}`); }
   }
+  setMeta('last_cycle_at', new Date().toISOString());
   log(`ledger ${JSON.stringify(countsByState())} balance=${await walletBalance().catch(() => '?')} CTC`);
 }
 
