@@ -24,6 +24,7 @@ export interface EventRow {
   state: State;
   reason: string | null;
   attempts: number;
+  source: 'tail' | 'self';
   proof_roots: number | null;
   proof_bytes: number | null;
   cc_tx: string | null;
@@ -100,18 +101,24 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 `);
 
+if (!(db.prepare("PRAGMA table_info(events)").all() as { name: string }[]).some((c) => c.name === 'source')) {
+  db.exec("ALTER TABLE events ADD COLUMN source TEXT NOT NULL DEFAULT 'tail'");
+}
+
 export const now = (): string => new Date().toISOString();
 
 const stmts = {
   insertEvent: db.prepare(`INSERT OR IGNORE INTO events
-    (eth_tx, log_index, eth_block, tx_index, protocol, kind, borrower, amount, market_or_asset, token, state, reason, seen_at, failed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+    (eth_tx, log_index, eth_block, tx_index, protocol, kind, borrower, amount, market_or_asset, token, state, reason, seen_at, failed_at, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  promoteToSelf: db.prepare(`UPDATE events SET source = 'self' WHERE eth_tx = ? AND log_index = ? AND source <> 'self'`),
+  getEvent: db.prepare('SELECT * FROM events WHERE eth_tx = ? AND log_index = ?'),
   getMeta: db.prepare('SELECT value FROM meta WHERE key = ?'),
   setMeta: db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'),
   countsByState: db.prepare('SELECT state, COUNT(*) AS n FROM events GROUP BY state'),
   markAttested: db.prepare(`UPDATE events SET state = 'attested', attested_at = ? WHERE state = 'seen' AND eth_block <= ?`),
   queue: db.prepare(`SELECT * FROM events WHERE state IN ('attested', 'proven')
-    ORDER BY CASE kind WHEN 'Liquidation' THEN 0 WHEN 'Borrow' THEN 1 ELSE 2 END, eth_block ASC, id ASC LIMIT ?`),
+    ORDER BY CASE source WHEN 'self' THEN 0 ELSE 1 END, CASE kind WHEN 'Liquidation' THEN 0 WHEN 'Borrow' THEN 1 ELSE 2 END, eth_block ASC, id ASC LIMIT ?`),
   rowsForTx: db.prepare('SELECT * FROM events WHERE eth_tx = ? ORDER BY log_index'),
   setProven: db.prepare(`UPDATE events SET state = 'proven', proven_at = ?, tx_index = ?, proof_roots = ?, proof_bytes = ?, reason = NULL WHERE eth_tx = ? AND state IN ('attested','proven')`),
   setRecorded: db.prepare(`UPDATE events SET state = 'recorded', recorded_at = ?, cc_tx = ?, cc_block = ?, gas_used = ?, reason = ? WHERE eth_tx = ? AND state IN ('attested','proven','failed')`),
@@ -146,12 +153,14 @@ export interface NewEvent {
 }
 
 /** One row per observed event. A zero amount is a permanent failure the contract would also refuse. Never deletes. */
-export function insertEvent(e: NewEvent): boolean {
+export function insertEvent(e: NewEvent, source: 'tail' | 'self' = 'tail'): boolean {
   const zero = e.amount === 0n;
   const r = stmts.insertEvent.run(e.ethTx, e.logIndex, e.ethBlock, e.txIndex, e.protocol, e.kind, e.borrower, e.amount.toString(),
-    e.marketOrAsset, e.token, zero ? 'failed' : 'seen', zero ? 'zero_amount' : null, now(), zero ? now() : null);
+    e.marketOrAsset, e.token, zero ? 'failed' : 'seen', zero ? 'zero_amount' : null, now(), zero ? now() : null, source);
+  if (r.changes === 0 && source === 'self') stmts.promoteToSelf.run(e.ethTx, e.logIndex);
   return r.changes > 0;
 }
+export const getEvent = (ethTx: string, logIndex: number): EventRow | undefined => stmts.getEvent.get(ethTx, logIndex) as EventRow | undefined;
 export const getMeta = (k: string): string | null => (stmts.getMeta.get(k) as { value: string } | undefined)?.value ?? null;
 export const setMeta = (k: string, v: string): void => { stmts.setMeta.run(k, v); };
 export function countsByState(): Record<State, number> {

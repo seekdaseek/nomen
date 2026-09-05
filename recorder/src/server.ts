@@ -5,9 +5,14 @@ import { byBorrower, countsByKindProtocol, countsByState, distinctRecordedBorrow
 import { nomenRead, walletBalance } from './creditcoin.ts';
 import { usdValue } from './prices.ts';
 import { tokenMeta } from './eth.ts';
+import { submitAddress, submitTx } from './selfsubmit.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ROOT } from './config.ts';
 
+const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
 const json = (res: http.ServerResponse, code: number, body: unknown): void => {
-  res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'no-store' });
+  res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store', ...CORS });
   res.end(JSON.stringify(body, (_k, v) => (typeof v === 'bigint' ? v.toString() : v), 2));
 };
 
@@ -63,6 +68,19 @@ export function startServer(): void {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://x');
     try {
+      if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end(); }
+      if (url.pathname === '/' || url.pathname === '/index.html') {
+        const page = fs.readFileSync(path.join(ROOT, 'recorder', 'public', 'nomen-index.html'));
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+        return res.end(page);
+      }
+      if (url.pathname === '/submit' && req.method === 'POST') {
+        const body = await new Promise<string>((resolve, reject) => { let b = ''; req.on('data', (c) => { b += c; if (b.length > 4096) reject(new Error('body too large')); }); req.on('end', () => resolve(b)); req.on('error', reject); });
+        const input = JSON.parse(body || '{}') as { txHash?: string; address?: string; blocks?: number };
+        if (input.txHash) return json(res, 200, await submitTx(input.txHash));
+        if (input.address) return json(res, 200, await submitAddress(input.address, Number(input.blocks ?? 50_000)));
+        return json(res, 400, { error: 'send {"txHash": "0x…"} or {"address": "0x…", "blocks": 50000}' });
+      }
       if (url.pathname === '/health') {
         return json(res, 200, { ok: true, dryRun: config.dryRun, cursor: Number(getMeta('cursor') ?? 0), ethHead: Number(getMeta('eth_head') ?? 0), attestedHead: Number(getMeta('attested_head') ?? 0), lastScanAt: getMeta('last_scan_at'), lastSubmitAt: getMeta('last_submit_at'), counts: countsByState(), balanceCTC: await walletBalance() });
       }
@@ -73,9 +91,9 @@ export function startServer(): void {
       if (m) return json(res, 200, await borrower(m[1]));
       const t = url.pathname.match(/^\/token\/(0x[0-9a-fA-F]{40})$/);
       if (t) return json(res, 200, await tokenMeta(t[1]));
-      json(res, 404, { error: 'not found', routes: ['/health', '/totals', '/recent?n=50', '/borrower/:address', '/submissions?n=20'] });
+      json(res, 404, { error: 'not found', routes: ['/health', '/totals', '/recent?n=50', '/borrower/:address', '/submissions?n=20', 'POST /submit'] });
     } catch (e) {
-      json(res, 500, { error: (e as Error).message });
+      json(res, (e as Error).message.includes('must be') ? 400 : 500, { error: (e as Error).message });
     }
   });
   server.listen(config.port, '127.0.0.1', () => log(`http listening on 127.0.0.1:${config.port}`));

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nomen</title>
+<meta name="description" content="Portable, proven credit history: Aave v3, Morpho Blue and Spark lending events proven from Ethereum mainnet onto Creditcoin.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ink: #0f1113; --surface: #16191c; --surface-2: #1d2125; --rule: #2b3036; --rule-strong: #3a4048;
+    --text: #e9e4da; --muted: #9b958a; --faint: #6b665d;
+    --accent: #c8553d; --accent-ink: #f0c3b6;
+    --good: #7fb489; --warn: #d9a441; --bad: #d6684f; --info: #7ea6c9;
+    --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body { margin: 0; background: var(--ink); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid var(--rule-strong); }
+  a:hover { border-bottom-color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header { border-bottom: 1px solid var(--rule); }
+  header .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 20px 24px; flex-wrap: wrap; }
+  .wordmark { font-family: var(--serif); font-weight: 500; font-size: 28px; letter-spacing: -0.01em; font-variation-settings: "opsz" 144; }
+  .wordmark em { font-style: italic; color: var(--accent); }
+  .definition { color: var(--muted); font-size: 14px; max-width: 60ch; }
+  .definition i { font-family: var(--serif); color: var(--text); }
+  .status { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .status b { color: var(--text); font-weight: 500; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-right: 6px; vertical-align: 1px; }
+  .dot.live { background: var(--good); box-shadow: 0 0 0 3px rgba(127,180,137,.18); }
+  .dot.stale { background: var(--warn); }
+
+  .thesis { padding: 44px 0 28px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(26px, 3.6vw, 40px); line-height: 1.22; margin: 0; max-width: 30ch; text-wrap: balance; font-variation-settings: "opsz" 144; letter-spacing: -0.005em; }
+  h1 .n { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text); }
+  h1 .n.big { color: var(--accent); font-size: 1.15em; }
+  .method { color: var(--muted); font-size: 13px; margin-top: 16px; max-width: 78ch; }
+  .method code { font-family: var(--mono); font-size: 12px; color: var(--text); }
+
+  section { padding: 26px 0; border-top: 1px solid var(--rule); }
+  h2 { font-family: var(--sans); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  .grid { display: grid; gap: 28px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .grid.three { grid-template-columns: 1.1fr 1fr 1fr; }
+  @media (max-width: 860px) { .grid.two, .grid.three { grid-template-columns: 1fr; } }
+
+  /* ledger by state: the honesty strip */
+  .bar { display: flex; height: 14px; border-radius: 3px; overflow: hidden; background: var(--surface-2); }
+  .bar span { display: block; height: 100%; min-width: 0; }
+  .legend { display: grid; grid-template-columns: repeat(5, auto); gap: 10px 18px; margin-top: 12px; font-family: var(--mono); font-size: 12px; }
+  .legend div { display: flex; flex-direction: column; gap: 2px; }
+  .legend .k { color: var(--muted); }
+  .legend .v { color: var(--text); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .s-seen { background: #3a4048; } .s-attested { background: #55606a; } .s-proven { background: var(--info); } .s-recorded { background: var(--good); } .s-failed { background: var(--warn); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 12px; max-width: 60ch; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; padding-right: 0; }
+  td.mono { font-family: var(--mono); font-size: 12px; }
+  .tablewrap { overflow-x: auto; }
+  tr:last-child td { border-bottom: 0; }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
+  .kv dt { color: var(--muted); margin: 0; } .kv dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* controls */
+  form { display: flex; gap: 8px; }
+  input[type=text] { flex: 1; min-width: 0; background: var(--surface); color: var(--text); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 10px 12px; font-family: var(--mono); font-size: 13px; }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  button { background: var(--accent); color: #17100e; border: 0; border-radius: 4px; padding: 10px 16px; font-family: var(--sans); font-weight: 600; font-size: 13px; cursor: pointer; }
+  button.quiet { background: var(--surface-2); color: var(--text); border: 1px solid var(--rule-strong); }
+  button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+  button[disabled] { opacity: .55; cursor: wait; }
+  .result { margin-top: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; }
+  .result:empty { display: none; }
+  .scorebox { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .score { font-family: var(--serif); font-size: 44px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+  .grade { font-family: var(--mono); font-size: 14px; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--rule-strong); }
+  .g-A, .g-B { color: var(--good); border-color: var(--good); } .g-C { color: var(--info); border-color: var(--info); } .g-D { color: var(--warn); border-color: var(--warn); } .g-E { color: var(--bad); border-color: var(--bad); } .g-N { color: var(--muted); }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 3px; background: var(--surface-2); color: var(--muted); }
+  .pill.recorded { color: var(--good); } .pill.failed { color: var(--warn); } .pill.proven { color: var(--info); }
+  .err { color: var(--bad); font-size: 13px; }
+  .prose { max-width: 68ch; color: var(--text); font-size: 14px; }
+  .prose p { margin: 0 0 12px; }
+  footer { border-top: 1px solid var(--rule); padding: 22px 0 40px; color: var(--muted); font-size: 12px; font-family: var(--mono); display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  @media (prefers-reduced-motion: no-preference) { .dot.live { animation: pulse 2.4s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(127,180,137,.06); } } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <div class="wordmark">nomen<em>.</em></div>
+      <div class="definition">In Roman bookkeeping a <i>nomen</i> was a debt entry: a creditor's claim, on record. Here: every borrow, repayment and liquidation on Aave v3, Morpho Blue and Spark, proven from Ethereum mainnet onto Creditcoin, scored on-chain.</div>
+    </div>
+    <div class="status" id="status"><span><span class="dot" id="dot"></span>recorder</span><span>ledger <b id="st-counts">…</b></span><span>attested head <b id="st-att">…</b></span><span>balance <b id="st-bal">…</b> CTC</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="thesis">
+    <div class="eyebrow">Creditcoin CC3 testnet · contract <a id="contract-link" href="#">…</a></div>
+    <h1 id="headline"><span class="n big">…</span> credit events proven from Ethereum mainnet onto Creditcoin.</h1>
+    <div class="method" id="usd-method">USD notional: loading price method…</div>
+  </div>
+
+  <section>
+    <div class="grid three">
+      <div>
+        <h2>Ledger by state</h2>
+        <div class="bar" id="bar"></div>
+        <div class="legend" id="legend"></div>
+        <div class="note">One row per event observed on Ethereum; rows are never deleted. <b>recorded</b> means the Creditcoin verifier accepted the inclusion proof and the contract decoded the receipt. <b>failed</b> keeps its reason.</div>
+      </div>
+      <div>
+        <h2>By protocol and kind</h2>
+        <div class="tablewrap"><table id="split"><thead><tr><th>protocol</th><th class="num">borrows</th><th class="num">repays</th><th class="num">liquidations</th></tr></thead><tbody></tbody></table></div>
+        <div class="note" id="onchain-note"></div>
+      </div>
+      <div>
+        <h2>USD notional</h2>
+        <dl class="kv" id="usd"></dl>
+        <div class="note">Raw token units live on-chain. Dollar figures are computed here, from one stated source at one stated block, and labelled as such.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid two">
+      <div>
+        <h2>Look up a borrower</h2>
+        <form id="lookup"><input type="text" id="lookup-addr" placeholder="0x… Ethereum address" spellcheck="false" autocomplete="off"><button type="submit">Score</button></form>
+        <div class="result" id="lookup-result"></div>
+      </div>
+      <div>
+        <h2>Submit your own history</h2>
+        <form id="self"><input type="text" id="self-input" placeholder="0x… your address, or a transaction hash" spellcheck="false" autocomplete="off"><button type="submit">Prove it</button></form>
+        <div class="note">Anyone can prove any Ethereum transaction into the ledger. Paste your address to scan the last ~7 days of your borrows and repayments on the three protocols, or a single transaction hash. Your events jump the queue; each is fetched from the prover and recorded within a few minutes of attestation.</div>
+        <div class="result" id="self-result"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Most recent records</h2>
+    <div class="tablewrap"><table id="recent"><thead><tr><th>Ethereum tx</th><th>protocol</th><th>kind</th><th>borrower</th><th class="num">amount</th><th class="num">USD</th><th>Creditcoin tx</th><th class="num">gas</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="grid two">
+      <div class="prose">
+        <h2>How a record comes to exist</h2>
+        <p>A lending transaction happens on Ethereum. Creditcoin attests the block. The prover returns the encoded transaction and receipt with a Merkle inclusion proof and a continuity proof. Anyone calls <code>record()</code> on the contract; the native verifier precompile checks inclusion and continuity, and only then does the contract decode the receipt's logs, keep the ones emitted by the three pools, and update the borrower's record. No oracle. No indexer's word. No self-report.</p>
+        <p>The score is a pure function of that record: base 500, plus up to 200 for repayments, plus 50 for a clean history, minus 150 per liquidation decaying over a year. It is not a credit model. It is proof that one can be computed from proven inputs.</p>
+      </div>
+      <div class="prose">
+        <h2>Why Compound v3 is not here</h2>
+        <p>Compound's Comet emits <code>Supply</code> and <code>Withdraw</code>. Whether a withdraw is a borrow depends on the sign of the account's base balance at that moment, which is state. Attestcoin proves transaction inclusion, not state, so a Comet receipt alone cannot tell a loan from a withdrawal. Rather than guess, it is excluded.</p>
+        <p>Every number on this page came from a run. Where something is unmeasured, it says so.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="wrap"><span id="ft-contract"></span><span><a href="https://github.com/seekdaseek/nomen">github.com/seekdaseek/nomen</a></span><span>MIT</span></footer>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const fmt = (n) => Number(n).toLocaleString('en-US');
+  const usd = (n) => n == null ? '—' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  const short = (h, n = 10) => h ? h.slice(0, n) + '…' : '—';
+  const units = (r) => r.units == null ? r.amount : Number(r.units).toLocaleString('en-US', { maximumFractionDigits: r.units < 1 ? 6 : 2 }) + (r.symbol ? ' ' + r.symbol : '');
+  const explorer = 'https://creditcoin-testnet.blockscout.com';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  async function loadTotals() {
+    const t = await (await fetch('/totals')).json();
+    const kinds = t.byKind;
+    $('#headline').innerHTML = `<span class="n big">${fmt(t.recorded)}</span> credit events proven from Ethereum mainnet onto Creditcoin over <span class="n">${t.span.days}</span> days, across three lending protocols: <span class="n">${fmt(kinds.Borrow)}</span> loans opened, <span class="n">${fmt(kinds.Repay)}</span> repayments, <span class="n">${fmt(kinds.Liquidation)}</span> liquidations, <span class="n">${usd(t.usd.total)}</span> notional. <span class="n">${fmt(t.borrowers)}</span> borrowers scored.`;
+    $('#usd-method').innerHTML = `USD notional covers <code>${fmt(t.usd.pricedRows)}</code> of <code>${fmt(t.recorded)}</code> recorded events. Method: ${esc(t.usd.method)}.`;
+    $('#contract-link').textContent = t.contract; $('#contract-link').href = `${explorer}/address/${t.contract}`;
+    $('#ft-contract').textContent = `contract ${t.contract}`;
+    const c = t.ledger.counts, order = ['seen', 'attested', 'proven', 'recorded', 'failed'], total = order.reduce((a, k) => a + c[k], 0) || 1;
+    $('#bar').innerHTML = order.map((k) => `<span class="s-${k}" style="width:${(100 * c[k] / total).toFixed(2)}%" title="${k} ${c[k]}"></span>`).join('');
+    $('#legend').innerHTML = order.map((k) => `<div><span class="k"><span class="sw s-${k}"></span>${k}</span><span class="v">${fmt(c[k])}</span></div>`).join('');
+    const protos = ['AaveV3', 'MorphoBlue', 'Spark'], names = { AaveV3: 'Aave v3', MorphoBlue: 'Morpho Blue', Spark: 'Spark' };
+    $('#split tbody').innerHTML = protos.map((p) => `<tr><td>${names[p]}</td>${['Borrow', 'Repay', 'Liquidation'].map((k) => `<td class="num">${fmt(t.byProtocolKind[p + '.' + k] || 0)}</td>`).join('')}</tr>`).join('') + `<tr><td><b>recorded</b></td>${['Borrow', 'Repay', 'Liquidation'].map((k) => `<td class="num"><b>${fmt(kinds[k])}</b></td>`).join('')}</tr>`;
+    $('#onchain-note').textContent = t.onchain ? `Contract counters agree: ${fmt(t.onchain.events)} events, ${fmt(t.onchain.borrowers)} borrowers on-chain.` : 'Contract counters unavailable right now.';
+    $('#usd').innerHTML = [['borrowed', t.usd.borrowed], ['repaid', t.usd.repaid], ['liquidated debt', t.usd.liquidated], ['total', t.usd.total]].map(([k, v]) => `<dt>${k}</dt><dd>${usd(v)}</dd>`).join('') + `<dt>priced</dt><dd>${fmt(t.usd.pricedRows)} / ${fmt(t.recorded)} events</dd>`;
+  }
+  async function loadHealth() {
+    const h = await (await fetch('/health')).json();
+    const c = h.counts; $('#st-counts').textContent = `${fmt(c.recorded)} recorded · ${fmt(c.attested + c.proven + c.seen)} queued · ${fmt(c.failed)} failed`;
+    $('#st-att').textContent = fmt(h.attestedHead); $('#st-bal').textContent = Number(h.balanceCTC).toFixed(3);
+    const age = h.lastScanAt ? (Date.now() - Date.parse(h.lastScanAt)) / 1000 : 1e9;
+    $('#dot').className = 'dot ' + (age < 300 ? 'live' : 'stale'); $('#dot').title = h.lastScanAt ? `last scan ${h.lastScanAt}` : 'no scan yet';
+  }
+  async function loadRecent() {
+    const rows = await (await fetch('/recent?n=20')).json();
+    $('#recent tbody').innerHTML = rows.length ? rows.map((r) => `<tr><td class="mono"><a href="https://etherscan.io/tx/${r.eth_tx}">${short(r.eth_tx)}</a></td><td>${r.protocol}</td><td>${r.kind}</td><td class="mono"><a href="#" data-addr="${r.borrower}">${short(r.borrower)}</a></td><td class="num">${units(r)}</td><td class="num">${usd(r.usd)}</td><td class="mono">${r.cc_tx ? `<a href="${explorer}/tx/${r.cc_tx}">${short(r.cc_tx)}</a>` : '<span class="pill">already on chain</span>'}</td><td class="num">${r.gas_used ? fmt(r.gas_used) : '—'}</td></tr>`).join('') : '<tr><td colspan="8">No records yet.</td></tr>';
+  }
+  function renderBorrower(b) {
+    const o = b.onchain, g = o ? o.grade : 'N', ev = b.events;
+    const states = ev.reduce((a, r) => (a[r.state] = (a[r.state] || 0) + 1, a), {});
+    return `<div class="scorebox"><span class="score">${o ? o.score : '—'}</span><span class="grade g-${g}">grade ${g}</span><span class="pill">${o && (o.borrows + o.repays + o.liquidations) ? `${o.borrows} borrows · ${o.repays} repays · ${o.liquidations} liquidations on-chain` : 'no proven history on-chain yet'}</span></div>
+      <div class="note">Ledger: ${ev.length ? Object.entries(states).map(([s, n]) => `<span class="pill ${s}">${s} ${n}</span>`).join(' ') : 'no events observed for this address in the scanned window'}${o && o.firstEthBlock ? ` · first proven block ${fmt(o.firstEthBlock)}, last ${fmt(o.lastEthBlock)}` : ''}</div>
+      ${ev.length ? `<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>block</th><th>protocol</th><th>kind</th><th class="num">amount</th><th class="num">USD</th><th>state</th></tr></thead><tbody>${ev.slice(-12).reverse().map((r) => `<tr><td class="mono">${fmt(r.eth_block)}</td><td>${r.protocol}</td><td>${r.kind}</td><td class="num">${units(r)}</td><td class="num">${usd(r.usd)}</td><td><span class="pill ${r.state}">${r.state}</span>${r.cc_tx ? ` <a class="mono" href="${explorer}/tx/${r.cc_tx}">${short(r.cc_tx, 8)}</a>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      <div class="note">${esc(b.scoreFormula)}</div>`;
+  }
+  async function lookup(addr) {
+    const box = $('#lookup-result'); box.innerHTML = '<span class="pill">looking up…</span>';
+    try { const r = await fetch('/borrower/' + addr); const b = await r.json(); box.innerHTML = r.ok ? renderBorrower(b) : `<span class="err">${esc(b.error)}</span>`; }
+    catch (e) { box.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  }
+  $('#lookup').addEventListener('submit', (e) => { e.preventDefault(); const v = $('#lookup-addr').value.trim(); if (/^0x[0-9a-fA-F]{40}$/.test(v)) lookup(v); else $('#lookup-result').innerHTML = '<span class="err">Enter a 0x address (40 hex characters).</span>'; });
+  document.addEventListener('click', (e) => { const a = e.target.closest('a[data-addr]'); if (a) { e.preventDefault(); $('#lookup-addr').value = a.dataset.addr; lookup(a.dataset.addr); window.scrollTo({ top: $('#lookup').offsetTop - 80, behavior: 'smooth' }); } });
+  $('#self').addEventListener('submit', async (e) => {
+    e.preventDefault(); const v = $('#self-input').value.trim(), box = $('#self-result'), btn = e.target.querySelector('button');
+    const body = /^0x[0-9a-fA-F]{64}$/.test(v) ? { txHash: v } : /^0x[0-9a-fA-F]{40}$/.test(v) ? { address: v, blocks: 50000 } : null;
+    if (!body) { box.innerHTML = '<span class="err">Enter a 0x address (40 hex) or a transaction hash (64 hex).</span>'; return; }
+    btn.disabled = true; box.innerHTML = `<span class="pill">${body.address ? 'scanning the last 50,000 Ethereum blocks for your events, about 30 seconds…' : 'reading the transaction…'}</span>`;
+    try {
+      const r = await fetch('/submit', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      box.innerHTML = `<div><b>${d.found}</b> credit event${d.found === 1 ? '' : 's'} found${body.address ? ` for ${short(d.address)} in blocks ${fmt(d.fromBlock)}–${fmt(d.toBlock)}` : ` in ${short(d.txHash)}`}, <b>${d.inserted}</b> new in the ledger, queued ahead of the market tail.</div>` + (d.rows.length ? `<div class="note">${d.rows.map((r) => `<span class="pill ${r.state}">${r.protocol} ${r.kind} ${r.state}</span>`).join(' ')}</div><div class="note">Check back with the lookup on the left; recorded rows show their Creditcoin transaction.</div>` : '<div class="note">Nothing to prove: no borrows, repayments or liquidations on Aave v3, Morpho Blue or Spark in that window.</div>');
+    } catch (err) { box.innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+    btn.disabled = false;
+  });
+  async function refresh() { try { await Promise.all([loadTotals(), loadHealth(), loadRecent()]); } catch (e) { $('#st-counts').textContent = 'API unreachable'; } }
+  refresh(); setInterval(refresh, 30000);
+})();
+</script>
+</body>
+</html>
